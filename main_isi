@@ -54,17 +54,7 @@ Director::~Director() {
 }
 
 void Director::agregar_pelicula(Pelicula * pelicula){
-    lNodo* nuevo_nodo = new lNodo();
-    nuevo_nodo->val = pelicula; // Aquí solo asignamos el puntero de la película, no la creamos de nuevo.
-    nuevo_nodo->sig = nullptr;
 
-    if (head == nullptr) {
-        head = nuevo_nodo; // Si la lista está vacía, el nuevo nodo es el head.
-    } else {
-        tail->sig = nuevo_nodo; // Añadir el nuevo nodo al final de la lista.
-    }
-    tail = nuevo_nodo; // Actualizar el tail.
-    size++; // Incrementar el tamaño de la lista.
 }
 
 void Director::setNombre_director(const string& nombre){
