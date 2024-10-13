@@ -31,6 +31,8 @@ class Director {
         void ordenar () ; // ordena la lista
         void calcular_rating_promedio () ;
         void mostrar_peliculas () ;
+        void setNombre_director(const string& nombre); //lista
+        string obtener_nombre(); //lista
 };
 
 Director::Director(){
@@ -49,6 +51,28 @@ Director::~Director() {
         delete temp->val; // Liberar la memoria de la película
         delete temp;      // Liberar el nodo
     }
+}
+
+void Director::agregar_pelicula(Pelicula * pelicula){
+    lNodo* nuevo_nodo = new lNodo();
+    nuevo_nodo->val = pelicula; // Aquí solo asignamos el puntero de la película, no la creamos de nuevo.
+    nuevo_nodo->sig = nullptr;
+
+    if (head == nullptr) {
+        head = nuevo_nodo; // Si la lista está vacía, el nuevo nodo es el head.
+    } else {
+        tail->sig = nuevo_nodo; // Añadir el nuevo nodo al final de la lista.
+    }
+    tail = nuevo_nodo; // Actualizar el tail.
+    size++; // Incrementar el tamaño de la lista.
+}
+
+void Director::setNombre_director(const string& nombre){
+    nombre_director = nombre;
+}
+
+string Director::obtener_nombre(){
+    return nombre_director;
 }
 
 class Arboles {
@@ -75,8 +99,12 @@ class Arboles {
 };
 
 Arboles::Arboles(){
-    root_1, curr_1, root_2, curr_2 = nullptr;
-    size_1, size_2 = 0;
+    root_1 = nullptr;
+    curr_1 = nullptr;
+    root_2 = nullptr;
+    curr_2 = nullptr;
+    size_1 = 0;
+    size_2 = 0;
 }
 
 // Implementación del método eliminar_arbol
@@ -118,16 +146,64 @@ void leerArchivo(string nombreArchivo, Arboles& arbol) {
         if (getline(ss, titulo, ';') &&
             getline(ss, director, ';') &&
             getline(ss, ratingStr, ';')) {
-            cout << titulo << " " << director << " " << ratingStr << endl; //probandoooo
+            //cout << titulo << " " << director << " " << ratingStr << endl; //probandoooo
             // Crear una nueva película
             Pelicula* pelicula = new Pelicula{titulo, director, stof(ratingStr)};
 
             // Insertar la película en el árbol
-            //arbol.insertar_pelicula(pelicula);
+            arbol.insertar_pelicula(pelicula);
         }
     }
 
     archivo.close();  // Cerrar el archivo
+}
+
+
+void Arboles::insertar_pelicula(Pelicula* pelicula){
+    if (root_1 == nullptr) {
+        // Si el árbol está vacío, creamos un nuevo nodo raíz para el director
+        aNodo* nuevo_nodo = new aNodo();
+        nuevo_nodo->val = new Director();  // Crear el objeto Director
+        nuevo_nodo->val->setNombre_director(pelicula->director);  // Asignar el nombre del director
+        nuevo_nodo->val->agregar_pelicula(pelicula);  // Agregar la película al nuevo director
+        nuevo_nodo->izq = nullptr;
+        nuevo_nodo->der = nullptr;
+        root_1 = nuevo_nodo;
+    }else {
+        //busca si el director esta en el arbol
+        aNodo* actual = root_1;
+        aNodo* padre = nullptr;
+
+        while(actual != nullptr){
+            if(pelicula -> director == actual->val->obtener_nombre()){
+                //si esxiste se agrega la peli a la lista
+                actual->val->agregar_pelicula(pelicula);
+                return;
+            }
+            //sino existe movemos el nodo 
+            padre = actual;
+            if(pelicula->director < actual->val->obtener_nombre()){
+                actual=actual->izq;
+            }else{
+                actual= actual->der;
+            }
+        }
+        //creamos si el director no existe en el arbol
+        aNodo* nuevo_nodo = new aNodo();
+        nuevo_nodo->val = new Director();  // Crear el objeto Director
+        nuevo_nodo->val->setNombre_director(pelicula->director);  // Asignar el nombre del director
+        nuevo_nodo->val->agregar_pelicula(pelicula);  // Agregar la película al nuevo director
+        nuevo_nodo->izq = nullptr;
+        nuevo_nodo->der = nullptr;
+
+        //se busca la posicion donde va el director
+
+        if(pelicula->director < padre->val->obtener_nombre()){
+            padre->izq = nuevo_nodo;
+        }else{
+            padre -> der = nuevo_nodo;
+        }
+    }
 }
 
 int main(){
@@ -137,6 +213,34 @@ int main(){
     string nombreArchivo = "Peliculas.txt";
     leerArchivo(nombreArchivo, arbol);
 
+    string instruccion;
+
+    while (true) {
+        cout << "Ingrese un comando: ";
+        getline(cin, instruccion);
+
+        if (instruccion == "e") {
+            break; // Terminar ejecución
+        } else if (instruccion.substr(0, 3) == "sd ") {
+            // Buscar director
+            string director = instruccion.substr(3);
+            cout << director << endl;
+        } else if (instruccion.substr(0, 3) == "sm ") {
+            // Buscar película
+            string pelicula = instruccion.substr(3);
+            cout << pelicula << endl;
+        } else if (instruccion.substr(0, 3) == "br ") {
+            // Mostrar mejores directores
+            int n = stoi(instruccion.substr(3));
+            cout << n << endl;
+        } else if (instruccion.substr(0, 3) == "wr ") {
+            // Mostrar peores directores
+            int n = stoi(instruccion.substr(3));
+            cout << n << endl;
+        } else {
+            cout << "Comando no reconocido." << endl;
+        }
+    }
 
     
     return 0;
