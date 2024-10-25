@@ -24,6 +24,9 @@ class Director {
         lNodo * tail ;
         size_t size ; // longitud lista
         string nombre_director ;
+        float promedio;
+
+
     public :
         Director (); // constructor
         ~ Director () ; // destructor
@@ -94,7 +97,7 @@ void Director::ordenar(){
 
 void Director::mostrar_peliculas(){
     lNodo *aux= head;
-    while(aux =! nullptr){
+    while(aux != nullptr){
         cout<< aux->val->nombre<<endl;
         aux = aux->sig;
     }
@@ -106,6 +109,23 @@ void Director::setNombre_director(const string& nombre){
 
 string Director::obtener_nombre(){
     return nombre_director;
+}
+
+void Director::calcular_rating_promedio(){
+    lNodo *aux= head;
+    float sumar = 0;
+    promedio  = 0;
+    int c = 0;
+
+    cout<<size<<"-"<<aux->val->director<<endl;
+
+    while(aux != nullptr){
+        sumar += aux->val->rating;
+        c += 1;
+        aux = aux->sig;
+    }
+    promedio = sumar/c;
+    cout<<promedio<<endl;
 }
 
 class Arboles {
@@ -129,6 +149,8 @@ class Arboles {
         void copiar_arbol (); // hace copia de arbol 1 en arbol 2 ordenado respecto de rating
         Director * buscar_director ( string director ); // retorna arreglo de peliculas
         Pelicula * buscar_pelicula ( string pelicula ); // retorna peliculas
+        void mostrar();
+        void ayuda(aNodo * nodo);
 };
 
 Arboles::Arboles(){
@@ -239,6 +261,33 @@ void Arboles::insertar_pelicula(Pelicula* pelicula){
     }
 }
 
+void Arboles::ayuda(aNodo* nodo) {
+    if (nodo != nullptr) {
+        // Mostrar el nombre del director
+        nodo->val->calcular_rating_promedio();
+        cout << nodo->val->obtener_nombre() << endl;
+
+        // Llamar recursivamente solo si los hijos no son nullptr
+        if (nodo->izq != nullptr) {
+            ayuda(nodo->izq);
+        }
+        if (nodo->der != nullptr) {
+            ayuda(nodo->der);
+        }
+    }
+}
+
+void Arboles::mostrar() {
+    aNodo* aux = root_1;
+    if (aux != nullptr) {
+        aux->val->calcular_rating_promedio();
+        cout << aux->val->obtener_nombre()<<endl;
+        // Utilizamos la función `ayuda` para manejar la recursión
+        ayuda(aux->izq);
+        ayuda(aux->der);
+    }
+}
+
 int main(){
 
     Arboles arbol;
@@ -258,7 +307,7 @@ int main(){
             // Buscar director
             string director = instruccion.substr(3);
             cout << director << endl;
-            mostrar_peliculas();
+            
         } else if (instruccion.substr(0, 3) == "sm ") {
             // Buscar película
             string pelicula = instruccion.substr(3);
@@ -271,7 +320,9 @@ int main(){
             // Mostrar peores directores
             int n = stoi(instruccion.substr(3));
             cout << n << endl;
-        } else {
+        } else if(instruccion == "mo"){
+            arbol.mostrar();
+        }else {
             cout << "Comando no reconocido." << endl;
         }
     }
