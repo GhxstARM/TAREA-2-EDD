@@ -13,6 +13,14 @@ struct Pelicula {
     float rating ;
 };
 
+struct tNodoAux {
+    Pelicula * val ;
+    tNodoAux * sig ;
+    float promedio_total;
+    tNodoAux(Pelicula* pelicula) : val(pelicula), sig(nullptr) {}
+};
+
+
 class Director {
     private :
         struct lNodo {
@@ -24,19 +32,53 @@ class Director {
         lNodo * tail ;
         size_t size ; // longitud lista
         string nombre_director ;
-        float promedio;
-
 
     public :
         Director (); // constructor
         ~ Director () ; // destructor
-        void agregar_pelicula ( Pelicula * pelicula ); // agrega pelicula al final de la lista enlazada
-        void ordenar () ; // ordena la lista
-        void calcular_rating_promedio () ;
-        void mostrar_peliculas () ;
-        void setNombre_director(const string& nombre); //lista
-        string obtener_nombre(); //lista
+        float promedio;
+        void agregar_pelicula ( Pelicula * pelicula ); // agrega pelicula al final de la lista enlazada // listo
+        void ordenar () ; // ordena la lista //listo
+        void calcular_rating_promedio () ; //listo
+        void mostrar_peliculas () ; //listo
+        void setNombre_director(const string& nombre); //listo
+        string obtener_nombre(); //listo
+        tNodoAux * obtenerpelis(); //listo
+        void liberarpelis(tNodoAux* head_temp); //listo
 };
+
+tNodoAux* Director::obtenerpelis(){
+    tNodoAux* head_temp = nullptr;
+    tNodoAux* tail_temp = nullptr;
+    lNodo* aux = head;
+    
+    while (aux != nullptr) {
+        Pelicula* copia = new Pelicula(*aux->val);  // Copiar la película
+        tNodoAux* nuevo_nodo = new tNodoAux(copia);
+        
+        if (head_temp == nullptr) {
+            head_temp = tail_temp = nuevo_nodo;
+        } else {
+            tail_temp->sig = nuevo_nodo;
+            tail_temp = nuevo_nodo;
+        }
+        
+        aux = aux->sig;
+    }
+    return head_temp;
+}
+
+void Director::liberarpelis(tNodoAux* head_temp) {
+    if(head_temp == nullptr) return;
+    tNodoAux* actual = head_temp;
+    while (actual != nullptr) {
+        tNodoAux* temp = actual;
+        actual = actual->sig;
+        delete temp->val;  // Liberar cada película
+        delete temp;       // Liberar el nodo de tNodoAux
+    }
+    actual = nullptr;
+}
 
 Director::Director(){
     head = nullptr;
@@ -76,7 +118,6 @@ void Director::ordenar(){
     lNodo *aux2 = nullptr;
     Pelicula *auxPelicula;
 
-
     while(aux1 != nullptr){
         aux2= aux1->sig;
         while(aux2 != nullptr){
@@ -86,19 +127,15 @@ void Director::ordenar(){
                 aux1->val = auxPelicula;
             }
             aux1 = aux1->sig;
-
         }
-
         aux1 = aux1->sig;
-
-
     }
 }
 
 void Director::mostrar_peliculas(){
     lNodo *aux= head;
     while(aux != nullptr){
-        cout<< aux->val->nombre<<endl;
+        cout<< aux->val->nombre << " / " << aux->val->rating <<endl;
         aux = aux->sig;
     }
 }
@@ -117,15 +154,21 @@ void Director::calcular_rating_promedio(){
     promedio  = 0;
     int c = 0;
 
-    cout<<size<<"-"<<aux->val->director<<endl;
+    // cout<<size<<"-"<<aux->val->director<<endl;
 
     while(aux != nullptr){
         sumar += aux->val->rating;
         c += 1;
         aux = aux->sig;
     }
-    promedio = sumar/c;
-    cout<<promedio<<endl;
+    if(c > 0){
+        promedio = sumar/c;
+    }else{
+        promedio = 0;
+    }
+    
+    // cout<<promedio<<endl;
+
 }
 
 class Arboles {
@@ -145,13 +188,21 @@ class Arboles {
     public :
         Arboles () ; // constructor
         ~ Arboles () ; // destructor
-        void insertar_pelicula ( Pelicula * pelicula );
-        void copiar_arbol (); // hace copia de arbol 1 en arbol 2 ordenado respecto de rating
-        Director * buscar_director ( string director ); // retorna arreglo de peliculas
+        int cantidadpelis;
+        void insertar_pelicula ( Pelicula * pelicula ); //listo
+        void copiar_arbol (); // hace copia de arbol 1 en arbol 2 ordenado respecto de rating //listo
+        Director * buscar_director ( string director ); // retorna arreglo de peliculas //listo
         Pelicula * buscar_pelicula ( string pelicula ); // retorna peliculas
-        void mostrar();
-        void ayuda(aNodo * nodo);
+        void mostrar(); //listo
+        void ayuda(aNodo * nodo); //listo
+        void copiar_arbol_aux(aNodo * nodo); //listo
+        void insertar_por_promedio(aNodo*& root, Director* director); //listo
+        void mostrardirector(string nombre);
+        void mostrarpeli(string pelicula);
+        Pelicula* buscar_pelicula_recursivo(aNodo* nodo, string pelicula);
+
 };
+
 
 Arboles::Arboles(){
     root_1 = nullptr;
@@ -192,6 +243,8 @@ void leerArchivo(string nombreArchivo, Arboles& arbol) {
         numeroPeliculas = stoi(linea);
     }
 
+    arbol.cantidadpelis = numeroPeliculas;
+    
     // Leer las siguientes líneas con la información de cada película
     while (getline(archivo, linea)) {
         stringstream ss(linea);
@@ -286,6 +339,140 @@ void Arboles::mostrar() {
         ayuda(aux->izq);
         ayuda(aux->der);
     }
+
+}
+
+void Arboles::copiar_arbol() {
+    root_2 = nullptr; // Asegúrate de que root_2 está vacío antes de copiar
+    copiar_arbol_aux(root_1);
+}
+
+void Arboles::copiar_arbol_aux(aNodo* nodo) {
+    if (nodo == nullptr) {
+        return;
+    }
+
+    // Procesa el nodo actual antes de sus hijos (preorden)
+    Director* nuevo_director = new Director();
+    nuevo_director->setNombre_director(nodo->val->obtener_nombre());
+
+    // Copiar todas las películas del director original al nuevo
+    tNodoAux* peliculas = nodo->val->obtenerpelis();
+    tNodoAux* actual = peliculas;
+
+    while (actual != nullptr) {
+        Pelicula* nueva_pelicula = new Pelicula(*actual->val); // Suponiendo que tienes un constructor de copia
+        nuevo_director->agregar_pelicula(nueva_pelicula);
+        actual = actual->sig;
+    }
+
+    // Liberar la memoria de la lista temporal
+    nodo->val->liberarpelis(peliculas);  // Liberar las películas copiadas
+
+    // Calcular el rating promedio para el nuevo director y agregarlo a `root_2`
+    nuevo_director->calcular_rating_promedio();
+    insertar_por_promedio(root_2, nuevo_director);
+
+    // Llamada recursiva en preorden
+    copiar_arbol_aux(nodo->izq);
+    copiar_arbol_aux(nodo->der);
+}
+
+
+void Arboles::insertar_por_promedio(aNodo*& root, Director* director) {
+    if (root == nullptr) {
+        root = new aNodo();
+        root->val = director;
+        root->izq = nullptr;
+        root->der = nullptr;
+    } else {
+        if (director->promedio < root->val->promedio) {
+            insertar_por_promedio(root->izq, director);
+        } else {
+            insertar_por_promedio(root->der, director);
+        }
+    }
+}
+
+Director * Arboles::buscar_director(string director){
+    aNodo* aux = root_1;
+    if(aux == nullptr) return nullptr;
+    while(aux != nullptr){
+        if (aux->val->obtener_nombre() == director) {
+            return aux->val; // Retorna el director encontrado
+        }
+        
+        // Si el nombre es menor, se mueve a la izquierda; si es mayor, a la derecha
+        if (director < aux->val->obtener_nombre()) {
+            aux = aux->izq; // Moverse al subárbol izquierdo
+        } else {
+            aux = aux->der; // Moverse al subárbol derecho
+        }
+    }
+    return nullptr;
+}
+
+void Arboles::mostrardirector(string nombre) {
+    // Busca el director por su nombre
+    Director* directorEncontrado = buscar_director(nombre);
+    
+    // Verifica si se encontró el director
+    if (directorEncontrado != nullptr) {
+        directorEncontrado->mostrar_peliculas(); // Muestra las películas del director
+    } else {
+        return;
+    }
+}
+
+Pelicula* Arboles::buscar_pelicula(string pelicula) {
+    aNodo* aux = root_1;
+    return buscar_pelicula_recursivo(aux, pelicula);
+}
+
+Pelicula* Arboles::buscar_pelicula_recursivo(aNodo* aux, string pelicula) {
+    if (aux == nullptr) return nullptr;
+
+    Director* directoractual = aux->val;
+    tNodoAux* listapelis = directoractual->obtenerpelis();
+    tNodoAux* actual = listapelis;
+
+    while(listapelis != nullptr){
+        listapelis = listapelis->sig;
+    }
+
+    // Recorremos la lista de películas del director
+    while (actual != nullptr) {
+        if (actual->val->nombre == pelicula) {
+            Pelicula* encontrada = actual->val;
+            directoractual->liberarpelis(listapelis);  // Liberar lista antes de devolver
+            return encontrada;  // Retornar la película encontrada
+        }
+        actual = actual->sig;
+    }
+
+    // Liberar lista temporal de películas al terminar de revisar este director
+    directoractual->liberarpelis(listapelis);
+
+    // Continuar búsqueda en el subárbol izquierdo
+    Pelicula* resultado_izq = buscar_pelicula_recursivo(aux->izq, pelicula);
+    if (resultado_izq != nullptr) return resultado_izq;  // Si se encontró en el lado izquierdo
+
+    // Continuar búsqueda en el subárbol derecho
+    Pelicula* resultado_der = buscar_pelicula_recursivo(aux->der, pelicula);
+    if(resultado_der != nullptr) return resultado_der;
+
+    directoractual->liberarpelis(listapelis);
+    return nullptr;  // Devuelve el resultado del lado derecho (o nullptr si no se encontró)
+}
+
+
+void Arboles::mostrarpeli(string pelicula){
+    Pelicula * peliaux = buscar_pelicula(pelicula);
+    if (peliaux != nullptr) {
+        cout << peliaux->nombre << " / " << peliaux->director << " / " << peliaux->rating << endl;
+    } else {
+        return;
+    }
 }
 
 int main(){
@@ -307,11 +494,14 @@ int main(){
             // Buscar director
             string director = instruccion.substr(3);
             cout << director << endl;
+            arbol.mostrardirector(director);
             
         } else if (instruccion.substr(0, 3) == "sm ") {
             // Buscar película
             string pelicula = instruccion.substr(3);
             cout << pelicula << endl;
+            arbol.mostrarpeli(pelicula);
+
         } else if (instruccion.substr(0, 3) == "br ") {
             // Mostrar mejores directores
             int n = stoi(instruccion.substr(3));
@@ -323,10 +513,9 @@ int main(){
         } else if(instruccion == "mo"){
             arbol.mostrar();
         }else {
-            cout << "Comando no reconocido." << endl;
+            continue;
         }
     }
-
     
     return 0;
     
